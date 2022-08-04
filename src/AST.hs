@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module AST (compile, eval) where
+module AST (compile, eval, Subsitute, subsitute, Current, current, ControlFlow, RhsKeywords, LhsKeywords) where
 
 import Import
 import Util
@@ -21,10 +21,10 @@ type LhsKeywords = Position
 data MachineState r = MachineState
   { -- current text of program
     _output :: Text,
-    -- refer the continuation for abort the program
-    _ptr :: MachineState r -> Cont (MachineState r) r,
     -- if program should keep running from the start after abort
-    _continue :: Bool
+    _continue :: Bool,
+    -- refer the continuation for abort the program
+    _ptr :: MachineState r -> Cont (MachineState r) r
   }
 
 output :: Lens' (MachineState a) Text
@@ -56,7 +56,7 @@ instance (Eval f, Eval g) => Eval (f :+: g) where
   hAlgebra (Inr r) = hAlgebra r
 
 instance Eval Current where
-  hAlgebra (Current k) = modify (over continue (const False)) >> get >>= k . view output
+  hAlgebra (Current k) = modify (set continue False) >> get >>= k . view output
 
 overState :: (Text -> Text) -> (Bool -> Bool) -> MachineState a -> MachineState a
 overState o c = over output o . over continue c
@@ -97,10 +97,10 @@ eval :: Text -> Text
 eval input = runCont eval'' id ^. output
   where
     eval' = execStateT $ compile program
-    eval'' = eval'''' (\goto -> eval' $ MachineState input goto False) eval'''
-    eval''' currentState =
-      eval'''' (\goto -> eval' $ over ptr (const goto) currentState) eval'''
-    eval'''' fromCallCC k =
+    eval'' = eval'''' (eval' . MachineState input False) eval'''
+    eval''' s =
+      eval'''' (\goto -> eval' $ s & ptr .~ goto) eval'''
+    eval'''' evalWithEscape k =
       do
-        currentState <- callCC fromCallCC
-        if currentState ^. continue then k currentState else pure currentState
+        s <- callCC evalWithEscape
+        if s ^. continue then k s else pure s
