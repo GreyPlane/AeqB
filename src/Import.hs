@@ -8,8 +8,10 @@ module Import
     module RIO.Lens,
     module Types,
     module Control.Monad.Free,
-    module Control.Monad.State,
+    module Control.Monad.State.Strict,
     module Control.Monad.Cont,
+    module Text.Megaparsec,
+    module Text.Megaparsec.Char,
     (:+:) (..),
     (:<:),
     inj,
@@ -19,9 +21,11 @@ where
 
 import Control.Monad.Cont
 import Control.Monad.Free
-import Control.Monad.State
-import RIO
+import Control.Monad.State.Strict
+import RIO hiding (many, some, try)
 import RIO.Lens
+import Text.Megaparsec hiding (State)
+import Text.Megaparsec.Char
 import Types
 
 data (f :+: g) e = Inl (f e) | Inr (g e)

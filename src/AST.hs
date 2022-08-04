@@ -7,12 +7,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module AST (compile, eval, Subsitute, subsitute, Current, current, ControlFlow, RhsKeywords, LhsKeywords) where
+module AST (compile, eval, Subsitute, subsitute, Current, current, ControlFlow (..), RhsKeywords, LhsKeywords) where
 
 import Import
 import Util
 
-data ControlFlow = Return
+data ControlFlow = Return deriving (Show)
 
 type RhsKeywords = Either Position ControlFlow
 
@@ -80,8 +80,8 @@ instance Eval Subsitute where
 compile :: Eval f => Free f a -> Executable a
 compile = iterM hAlgebra
 
-program :: Free (Current :+: Subsitute) Text
-program = do
+sampleProgram :: Free (Current :+: Subsitute) Text
+sampleProgram = do
   -- subsitute (Nothing, "a") (Just (Right Return), "b")
   -- subsitute (Nothing, "b") (Just $ Right Return, "n")
   -- subsitute (Nothing, "c") (Just $ Right Return, "x")
@@ -93,10 +93,10 @@ program = do
 -- >>> (eval "aaaaaaab")
 -- "hchcccccccc"
 
-eval :: Text -> Text
-eval input = runCont eval'' id ^. output
+eval :: Executable Text -> Text -> Text
+eval program input = runCont eval'' id ^. output
   where
-    eval' = execStateT $ compile program
+    eval' = execStateT program
     eval'' = eval'''' (eval' . MachineState input False) eval'''
     eval''' s =
       eval'''' (\goto -> eval' $ s & ptr .~ goto) eval'''
