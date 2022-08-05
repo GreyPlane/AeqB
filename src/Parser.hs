@@ -2,10 +2,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Parser where
+module Parser (Parser.parse) where
 
 import AST (ControlFlow (Return), Current, Subsitute, current, subsitute)
-import HaskellBackend.Interpreter (compile, eval)
 import Import
 import RIO.Text (pack)
 import Util (Position (End, Start))
@@ -24,9 +23,6 @@ control = (Return <$ string "return") <?> "control keyword"
 keyword :: Parser a -> Parser a
 keyword = between (char '(') (char ')')
 
-stringLit :: Parser Text
-stringLit = pack <$> someTill asciiChar (char '=')
-
 line :: Parser (Free (Current :+: Subsitute) ())
 line = do
   lk <- optional $ keyword position
@@ -40,10 +36,10 @@ line = do
 program :: Parser (Free (Current :+: Subsitute) Text)
 program = (>> current) . sequence <$> some line
 
--- >>> ttt
--- "JsLoveKoishi"
-test = runParser program "code.js" "(start)x=y\ny=JsX\nX=Love\n(end)x=Koishi"
-
-ttt = case test of
-  Left peb -> undefined
-  Right monad -> eval (compile monad) "xx"
+parse ::
+  String ->
+  Text ->
+  Either
+    (ParseErrorBundle Text Void)
+    (Free (Current :+: Subsitute) Text)
+parse = runParser program
