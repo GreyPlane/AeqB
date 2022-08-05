@@ -17,12 +17,11 @@ module Util
   )
 where
 
+import AST (Position (End, Start))
 import RIO
 import RIO.Text (isInfixOf, isPrefixOf, isSuffixOf)
 import qualified RIO.Text as T
 import RIO.Text.Partial (breakOn)
-
-data Position = Start | End deriving (Show)
 
 plus2 :: Int -> Int
 plus2 = (+ 2)

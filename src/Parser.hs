@@ -4,7 +4,8 @@
 
 module Parser where
 
-import AST (ControlFlow (Return), Current, Subsitute, compile, current, eval, subsitute)
+import AST (ControlFlow (Return), Current, Subsitute, current, subsitute)
+import HaskellBackend.Interpreter (compile, eval)
 import Import
 import RIO.Text (pack)
 import Util (Position (End, Start))
@@ -13,10 +14,8 @@ type Parser a = Parsec Void Text a
 
 position :: Parser Position
 position =
-  choice
-    [ Start <$ string "start",
-      End <$ string "end"
-    ]
+  Start <$ string "start"
+    <|> End <$ string "end"
     <?> "position keyword"
 
 control :: Parser ControlFlow
@@ -38,12 +37,12 @@ line = do
 
 -- return $ pack $ show lk ++ show l ++ show rk ++ show r
 
-programs :: Parser (Free (Current :+: Subsitute) Text)
-programs = (>> current) . sequence <$> some line
+program :: Parser (Free (Current :+: Subsitute) Text)
+program = (>> current) . sequence <$> some line
 
 -- >>> ttt
--- "JsLoveKoish"
-test = runParser programs "code.js" "(start)x=y\ny=JsX\nX=Love\n(end)x=Koish"
+-- "JsLoveKoishi"
+test = runParser program "code.js" "(start)x=y\ny=JsX\nX=Love\n(end)x=Koishi"
 
 ttt = case test of
   Left peb -> undefined
