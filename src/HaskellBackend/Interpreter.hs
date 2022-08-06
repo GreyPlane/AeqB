@@ -10,10 +10,10 @@ import qualified Data.IntMap as IM
 import Import
 import Util (matchByPosition, replaceByPosition)
 
-type Executable a = StateT (MachineState a) (Cont (MachineState a)) a
+type Executable = StateT MachineState (Cont MachineState) Text
 
 class Functor f => Interpret f where
-  hAlgebra :: f (Executable a) -> Executable a
+  hAlgebra :: f Executable -> Executable
 
 instance (Interpret f, Interpret g) => Interpret (f :+: g) where
   hAlgebra (Inl r) = hAlgebra r
@@ -35,7 +35,7 @@ instance Interpret Subsitute where
       matcher mstate =
         let ctext = mstate ^. output
             erecord = mstate ^. executed
-            executedOnce = fromMaybe False $ erecord !? lineNum
+            executedOnce = Just True == (erecord !? lineNum)
             matchedByPosition = matchByPosition ctext pattern
          in case patternAttr of
               Nothing -> matchedByPosition Nothing
@@ -57,10 +57,10 @@ instance Interpret Subsitute where
         Just Once -> insert lineNum True
         _ -> id
 
-compile :: Interpret f => Free f a -> Executable a
+compile :: Interpret f => Free f Text -> Executable
 compile = iterM hAlgebra
 
-eval :: Executable Text -> Text -> Text
+eval :: Executable -> Text -> Text
 eval program input = runCont eval'' id ^. output
   where
     eval' = execStateT program
