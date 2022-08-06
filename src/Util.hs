@@ -63,10 +63,10 @@ replaceSuffixPrepend pattern subsitution text
   | T.isSuffixOf pattern text = T.concat [subsitution, T.dropEnd (T.length pattern) text]
   | otherwise = text
 
-matchByPosition :: (Maybe Position, Text) -> Text -> Bool
-matchByPosition (Nothing, text) pattern = pattern `isInfixOf` text
-matchByPosition (Just Start, text) pattern = pattern `isPrefixOf` text
-matchByPosition (Just End, text) pattern = pattern `isSuffixOf` text
+matchByPosition :: Text -> Text -> Maybe Position -> Bool
+matchByPosition text pattern Nothing = pattern `isInfixOf` text
+matchByPosition text pattern (Just Start) = pattern `isPrefixOf` text
+matchByPosition text pattern (Just End) = pattern `isSuffixOf` text
 
 replaceByPosition :: (Maybe Position, Text) -> (Maybe Position, Text) -> Text -> Text
 replaceByPosition (Nothing, pattern) (Nothing, subsitution) text = replaceFirst pattern subsitution text

@@ -26,7 +26,7 @@ processFile :: String -> Text -> RIO env (Text -> Text)
 processFile filename content =
   let result = eval . compile <$> P.parse filename content
    in case result of
-        Left (ParseErrorBundle errors state) -> throwIO MalformedProgram
+        Left (ParseErrorBundle _ _) -> throwIO MalformedProgram
         Right f -> return f
 
 build :: HasAppOptions env => RIO env (Text -> Text)

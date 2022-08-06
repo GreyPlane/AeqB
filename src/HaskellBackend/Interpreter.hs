@@ -5,8 +5,10 @@
 module HaskellBackend.Interpreter (eval, compile) where
 
 import AST
+import Data.IntMap
+import qualified Data.IntMap as IM
 import Import
-import Util
+import Util (matchByPosition, replaceByPosition)
 
 type Executable a = StateT (MachineState a) (Cont (MachineState a)) a
 
@@ -18,26 +20,44 @@ instance (Interpret f, Interpret g) => Interpret (f :+: g) where
   hAlgebra (Inr r) = hAlgebra r
 
 instance Interpret Current where
-  hAlgebra (Current k) = modify (set continue False) >> get >>= k . view output
+  hAlgebra (Current k) = modify resetState >> get >>= k . view output
+    where
+      resetState = set continue False . set executed IM.empty
 
-overState :: (Text -> Text) -> (Bool -> Bool) -> MachineState a -> MachineState a
-overState o c = over output o . over continue c
+updateState :: (Text -> Text) -> Bool -> (IntMap Bool -> IntMap Bool) -> MachineState a -> MachineState a
+updateState o c e = over output o . set continue c . over executed e
 
 instance Interpret Subsitute where
-  hAlgebra (Subsitute (patternKeyword, pattern) (subsitutionKeyword, subsitution) k) = get >>= f
+  hAlgebra (Subsitute lineNum (patternAttr, pattern) (subsitutionAttr, subsitution) k) = get >>= f
     where
       f s =
-        let isMatched = matchByPosition (patternKeyword, s ^. output) pattern
-         in if isMatched
-              then lift $ s ^. ptr $ overState updateOutput updateContinue s
+        let shouldRun = matcher s
+         in if shouldRun
+              then lift $ s ^. ptr $ updateState updateOutput updateContinue updateExecuted s
               else k
-      updateOutput = case subsitutionKeyword of
-        Just (Right Return) -> const subsitution
-        Just (Left subsitutionPosition) -> replaceByPosition (patternKeyword, pattern) (Just subsitutionPosition, subsitution)
-        Nothing -> replaceByPosition (patternKeyword, pattern) (Nothing, subsitution)
-      updateContinue = case subsitutionKeyword of
-        Just (Right Return) -> const False
-        _ -> const True
+      matcher mstate =
+        let ctext = mstate ^. output
+            erecord = mstate ^. executed
+            executedOnce = fromMaybe False $ erecord !? lineNum
+            matchedByPosition = matchByPosition ctext pattern
+         in case patternAttr of
+              Nothing -> matchedByPosition Nothing
+              Just Once -> not executedOnce && matchedByPosition Nothing
+              Just (PP pos) -> matchedByPosition (Just pos)
+      replacer = case patternAttr of
+        Just Once -> replaceByPosition (Nothing, pattern)
+        Nothing -> replaceByPosition (Nothing, pattern)
+        Just (PP ppos) -> replaceByPosition (Just ppos, pattern)
+      updateOutput = case subsitutionAttr of
+        Just Return -> const subsitution
+        Just (SP pos) -> replacer (Just pos, subsitution)
+        Nothing -> replacer (Nothing, subsitution)
+      updateContinue = case subsitutionAttr of
+        Just Return -> False
+        _ -> True
+      updateExecuted = case patternAttr of
+        Just Once -> insert lineNum True
+        _ -> id
 
 compile :: Interpret f => Free f a -> Executable a
 compile = iterM hAlgebra
@@ -46,7 +66,7 @@ eval :: Executable Text -> Text -> Text
 eval program input = runCont eval'' id ^. output
   where
     eval' = execStateT program
-    eval'' = eval'''' (eval' . MachineState input False) eval'''
+    eval'' = eval'''' (eval' . MachineState input False IM.empty) eval'''
     eval''' s =
       eval'''' (\goto -> eval' $ s & ptr .~ goto) eval'''
     eval'''' evalWithEscape k =

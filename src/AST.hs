@@ -8,14 +8,14 @@ module AST
     output,
     ptr,
     continue,
+    executed,
     Subsitute (Subsitute),
     subsitute,
     Current (Current),
     current,
-    ControlFlow (Return),
     Position (Start, End),
-    RhsKeywords,
-    LhsKeywords,
+    PatternAttr (PP, Once),
+    SubsitutionAttr (SP, Return),
   )
 where
 
@@ -23,17 +23,17 @@ import Import
 
 data Position = Start | End deriving (Show)
 
-data ControlFlow = Return deriving (Show)
+data PatternAttr = PP Position | Once
 
-type RhsKeywords = Either Position ControlFlow
-
-type LhsKeywords = Position
+data SubsitutionAttr = SP Position | Return
 
 data MachineState r = MachineState
   { -- current text of program
     _output :: Text,
     -- if program should keep running from the start after abort
     _continue :: Bool,
+    -- record if certain line of program has been executed once
+    _executed :: IntMap Bool,
     -- refer the continuation for abort the program
     _ptr :: MachineState r -> Cont (MachineState r) r
   }
@@ -47,12 +47,15 @@ ptr = lens _ptr (\x y -> x {_ptr = y})
 continue :: Lens' (MachineState a) Bool
 continue = lens _continue (\x y -> x {_continue = y})
 
+executed :: Lens' (MachineState a) (IntMap Bool)
+executed = lens _executed (\x y -> x {_executed = y})
+
 data Current e = Current (Text -> e) deriving (Functor)
 
 current :: (Current :<: f) => Free f Text
 current = inject (Current Pure)
 
-data Subsitute e = Subsitute (Maybe LhsKeywords, Text) (Maybe RhsKeywords, Text) e deriving (Functor)
+data Subsitute e = Subsitute Int (Maybe PatternAttr, Text) (Maybe SubsitutionAttr, Text) e deriving (Functor)
 
-subsitute :: (Subsitute :<: f) => (Maybe LhsKeywords, Text) -> (Maybe RhsKeywords, Text) -> Free f ()
-subsitute a b = inject (Subsitute a b (Pure ()))
+subsitute :: (Subsitute :<: f) => Int -> (Maybe PatternAttr, Text) -> (Maybe SubsitutionAttr, Text) -> Free f ()
+subsitute lineNum pattern subsitution = inject (Subsitute lineNum pattern subsitution (Pure ()))
