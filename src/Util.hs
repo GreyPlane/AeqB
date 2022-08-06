@@ -3,8 +3,7 @@
 -- | Silly utility module, used to demonstrate how to write a test
 -- case.
 module Util
-  ( plus2,
-    replaceFirst,
+  ( replaceFirst,
     replaceAppend,
     replacePrepend,
     replacePrefix,
@@ -22,9 +21,6 @@ import RIO
 import RIO.Text (isInfixOf, isPrefixOf, isSuffixOf)
 import qualified RIO.Text as T
 import RIO.Text.Partial (breakOn)
-
-plus2 :: Int -> Int
-plus2 = (+ 2)
 
 replaceFirst :: Text -> Text -> Text -> Text
 replaceFirst pattern subsitution text
