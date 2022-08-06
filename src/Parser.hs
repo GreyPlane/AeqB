@@ -26,7 +26,7 @@ patternAttr = (Once <$ string "once") <|> (PP <$> position) <?> "pattern attribu
 keyword :: Parser a -> Parser a
 keyword = between (char '(') (char ')')
 
-line :: Parser (Int -> Free (Current :+: Subsitute) ())
+line :: Parser (Int -> Free Subsitute ())
 line = do
   pattr <- optional $ keyword patternAttr
   p <- pack <$> someTill letterChar (char '=')
@@ -35,7 +35,7 @@ line = do
   return $ \lineNum -> subsitute lineNum (pattr, p) (sattr, s)
 
 program :: Parser (Free (Current :+: Subsitute) Text)
-program = (>> current) . traverse (\(l, f) -> f l) . zip [0 ..] <$> some line
+program = (>> current) . hoistFree inj . traverse (\(l, f) -> f l) . zip [0 ..] <$> some line
 
 parse ::
   String ->
