@@ -24,16 +24,13 @@ instance Interpret Current where
     where
       resetState = set continue False . set executed IM.empty
 
-updateState :: (Text -> Text) -> Bool -> (IntMap Bool -> IntMap Bool) -> MachineState a -> MachineState a
-updateState o c e = over output o . set continue c . over executed e
-
 instance Interpret Subsitute where
   hAlgebra (Subsitute lineNum (patternAttr, pattern) (subsitutionAttr, subsitution) k) = get >>= f
     where
       f s =
         let shouldRun = matcher s
          in if shouldRun
-              then lift $ s ^. ptr $ updateState updateOutput updateContinue updateExecuted s
+              then lift $ s ^. ptr $ updateState s
               else k
       matcher mstate =
         let ctext = mstate ^. output
@@ -48,6 +45,7 @@ instance Interpret Subsitute where
         Just Once -> replaceByPosition (Nothing, pattern)
         Nothing -> replaceByPosition (Nothing, pattern)
         Just (PP ppos) -> replaceByPosition (Just ppos, pattern)
+      updateState = over output updateOutput . set continue updateContinue . over executed updateExecuted
       updateOutput = case subsitutionAttr of
         Just Return -> const subsitution
         Just (SP pos) -> replacer (Just pos, subsitution)
