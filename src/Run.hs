@@ -43,7 +43,7 @@ run =
     go program = do
       input <- decodeUtf8Lenient <$> getLine
       unless (input == ":quit") $
-        logInfo (display $ program input) >> go program
+        logInfo (display $ T.concat ["> ", program input]) >> go program
 
 processFile :: String -> Text -> RIO env (Text -> Text)
 processFile filename content =
