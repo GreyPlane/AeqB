@@ -29,9 +29,9 @@ keyword = between (char '(') (char ')')
 line :: Parser (Int -> Free Subsitute ())
 line = do
   pattr <- optional $ keyword patternAttr
-  p <- pack <$> someTill letterChar (char '=')
+  p <- pack <$> manyTill letterChar (char '=')
   sattr <- optional $ keyword subsitutionAttr
-  s <- pack <$> someTill letterChar (eof <|> void eol)
+  s <- pack <$> manyTill letterChar (eof <|> void eol)
   return $ \lineNum -> subsitute lineNum (pattr, p) (sattr, s)
 
 program :: Parser (Free (Current :+: Subsitute) Text)

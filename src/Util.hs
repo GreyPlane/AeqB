@@ -1,7 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Silly utility module, used to demonstrate how to write a test
--- case.
 module Util
   ( replaceFirst,
     replaceAppend,
@@ -24,6 +22,7 @@ import RIO.Text.Partial (breakOn)
 
 replaceFirst :: Text -> Text -> Text -> Text
 replaceFirst pattern subsitution text
+  | T.null pattern = subsitution <> text
   | T.null back = text
   | otherwise = T.concat [front, subsitution, T.drop (T.length pattern) back]
   where
@@ -31,6 +30,7 @@ replaceFirst pattern subsitution text
 
 replacePrepend :: Text -> Text -> Text -> Text
 replacePrepend pattern subsitution text
+  | T.null pattern = subsitution <> text
   | T.null back = text
   | otherwise = T.concat [subsitution, front, T.drop (T.length pattern) back]
   where
@@ -38,6 +38,7 @@ replacePrepend pattern subsitution text
 
 replaceAppend :: Text -> Text -> Text -> Text
 replaceAppend pattern subsitution text
+  | T.null pattern = text <> subsitution
   | T.null back = text
   | otherwise = T.concat [front, T.drop (T.length pattern) back, subsitution]
   where
@@ -64,9 +65,12 @@ replaceSuffixPrepend pattern subsitution text
   | otherwise = text
 
 matchByPosition :: Text -> Text -> Maybe Position -> Bool
-matchByPosition text pattern Nothing = pattern `isInfixOf` text
-matchByPosition text pattern (Just Start) = pattern `isPrefixOf` text
-matchByPosition text pattern (Just End) = pattern `isSuffixOf` text
+matchByPosition text pattern position
+  | T.null pattern = True
+  | otherwise = case position of
+    Nothing -> pattern `isInfixOf` text
+    (Just Start) -> pattern `isPrefixOf` text
+    (Just End) -> pattern `isSuffixOf` text
 
 replaceByPosition :: (Maybe Position, Text) -> (Maybe Position, Text) -> Text -> Text
 replaceByPosition (Nothing, pattern) (Nothing, subsitution) text = replaceFirst pattern subsitution text
