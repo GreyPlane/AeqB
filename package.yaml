@@ -25,6 +25,7 @@ dependencies:
   - free >= 5.1.7
   - mtl >= 2.2.2
   - megaparsec >= 9.2.0
+  - raw-strings-qq >= 1.1
   - containers
 
 ghc-options:

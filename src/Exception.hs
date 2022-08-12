@@ -2,7 +2,7 @@ module Exception where
 
 import Import
 
-data MalformedProgram = MalformedProgram
+newtype MalformedProgram = MalformedProgram Text
   deriving (Show, Typeable)
 
 instance Exception MalformedProgram
