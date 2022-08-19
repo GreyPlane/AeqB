@@ -1,5 +1,5 @@
 # AeqB
-esolang A=B haskell implementation via [free monad](https://hackage.haskell.org/package/free) and [data types a la carte](http://www.cs.ru.nl/~W.Swierstra/Publications/DataTypesALaCarte.pdf) approach
+esolang [A=B](https://esolangs.org/wiki/A=B) Haskell implementation via [free monad](https://hackage.haskell.org/package/free) and [data types a la carte](http://www.cs.ru.nl/~W.Swierstra/Publications/DataTypesALaCarte.pdf) approach
 
 ## Execute  
 
